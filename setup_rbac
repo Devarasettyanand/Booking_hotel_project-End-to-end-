@@ -1,0 +1,61 @@
+-- sql/setup_rbac.sql
+-- RBAC setup for Hotel Booking project
+-- Run this as ACCOUNTADMIN (or a role with equivalent privileges for DB/role creation)
+
+-- 1) Create database & schemas
+CREATE OR REPLACE DATABASE HOTEL_BOOKING;
+USE DATABASE HOTEL_BOOKING;
+
+CREATE OR REPLACE SCHEMA HOTEL_BOOKING_RAW;
+CREATE OR REPLACE SCHEMA HOTEL_BOOKING_SILVER;
+CREATE OR REPLACE SCHEMA HOTEL_BOOKING_GOLD;
+
+-- 2) Create roles
+CREATE OR REPLACE ROLE HOTEL_DEV;
+CREATE OR REPLACE ROLE HOTEL_ANALYST;
+
+-- 3) Grant role-level access to the database & schemas
+-- Developers need usage + ability to create objects in dev schema(s)
+GRANT USAGE ON DATABASE HOTEL_BOOKING TO ROLE HOTEL_DEV;
+GRANT USAGE ON ALL SCHEMAS IN DATABASE HOTEL_BOOKING TO ROLE HOTEL_DEV;
+
+-- Analysts need read-only usage (on gold)
+GRANT USAGE ON DATABASE HOTEL_BOOKING TO ROLE HOTEL_ANALYST;
+GRANT USAGE ON ALL SCHEMAS IN DATABASE HOTEL_BOOKING TO ROLE HOTEL_ANALYST;
+
+-- 4) Table-level privileges
+-- Developers: full privileges on RAW / SILVER (dev role)
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA HOTEL_BOOKING_RAW TO ROLE HOTEL_DEV;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA HOTEL_BOOKING_SILVER TO ROLE HOTEL_DEV;
+
+-- Optional: future tables (so new tables are auto-covered)
+GRANT ALL PRIVILEGES ON FUTURE TABLES IN SCHEMA HOTEL_BOOKING_RAW TO ROLE HOTEL_DEV;
+GRANT ALL PRIVILEGES ON FUTURE TABLES IN SCHEMA HOTEL_BOOKING_SILVER TO ROLE HOTEL_DEV;
+
+-- Analysts: read-only on GOLD
+GRANT SELECT ON ALL TABLES IN SCHEMA HOTEL_BOOKING_GOLD TO ROLE HOTEL_ANALYST;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA HOTEL_BOOKING_GOLD TO ROLE HOTEL_ANALYST;
+
+-- 5) Grant object creation for developers (optional)
+-- If you want HOTEL_DEV to create schemas/objects (e.g., development work)
+GRANT CREATE SCHEMA ON DATABASE HOTEL_BOOKING TO ROLE HOTEL_DEV;
+GRANT CREATE TABLE ON SCHEMA HOTEL_BOOKING_RAW TO ROLE HOTEL_DEV;
+GRANT CREATE TABLE ON SCHEMA HOTEL_BOOKING_SILVER TO ROLE HOTEL_DEV;
+
+-- 6) Assign role(s) to users (replace with your usernames)
+-- These statements must be run by an admin who can manage users and roles.
+GRANT ROLE HOTEL_DEV TO USER ANANDDEV;
+GRANT ROLE HOTEL_ANALYST TO USER ANANDDEV;
+
+-- 7) If you need to allow developer to create external integrations (ACCOUNT level)
+-- This requires ACCOUNTADMIN (be cautious). Only grant if absolutely required.
+-- Run as ACCOUNTADMIN:
+-- GRANT CREATE INTEGRATION ON ACCOUNT TO ROLE HOTEL_DEV;
+
+-- 8) Verify (queries you can run to confirm)
+-- SHOW ROLES;
+-- SHOW USERS;
+-- SHOW GRANTS TO ROLE HOTEL_DEV;
+-- SHOW GRANTS TO ROLE HOTEL_ANALYST;
+
+-- End of setup
